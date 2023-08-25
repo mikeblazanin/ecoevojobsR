@@ -72,6 +72,9 @@ carnegie_var <- as.data.frame(carnegie_var)
 
 aliases <- read.csv("./data-raw/aliases.csv", fileEncoding = "UTF-8",
                     strip.white = TRUE)
+aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
+write.csv(aliases, file = "./data-raw/aliases.csv",
+          row.names = FALSE, fileEncoding = "UTF-8")
 
 #Convert numeric codes into meaningful labels
 for(i in 1:ncol(carnegie_dat)) {
