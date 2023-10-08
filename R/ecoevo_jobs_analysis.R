@@ -103,7 +103,7 @@ uniq_inst <- unique(c(jobs[[1]]$Institution,
 find_matches <- function(jobs, carnegie, aliases) {
   #Jobs should have columns named "Institution" and "Location"
   #Carnegie should have column named "Institution name"
-  jobs <- cbind(jobs, NA, NA, NA, NA)
+  jobs <- cbind(jobs, "Unmatched", NA, NA)
   colnames(jobs)[(ncol(jobs)-2):ncol(jobs)] <-
     c("Matched status", "Institution name", "State abbreviation")
   for(i in 1:nrow(jobs)) {
@@ -162,7 +162,7 @@ find_matches <- function(jobs, carnegie, aliases) {
 
   #For rows where plain and partial matching failed, do matching using
   # manually-curated list of aliases
-  unmatched_names <- unique(jobs$Institution[is.na(jobs$`Institution name`)])
+  unmatched_names <- unique(jobs$Institution[jobs$`Matched status` == "Unmatched"])
 
   if(any(!is.na(aliases$carnegie_names) &
          !aliases$carnegie_names %in% carnegie$`Institution name`)) {
@@ -189,7 +189,7 @@ find_matches <- function(jobs, carnegie, aliases) {
     print(paste("There are", length(which_msng), "new aliases which need a match"))
   }
 
-  myrows <- which(is.na(jobs$`Institution name`))
+  myrows <- which(jobs$`Matched status` == "Unmatched")
   jobs$`Institution name`[myrows] <-
     aliases$carnegie_names[match(jobs$Institution[myrows], aliases$ecoevo_names)]
   jobs$`State abbreviation`[myrows] <-
