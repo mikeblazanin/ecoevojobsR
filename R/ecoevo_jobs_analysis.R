@@ -103,17 +103,18 @@ uniq_inst <- unique(c(jobs[[1]]$Institution,
 find_matches <- function(jobs, carnegie, aliases) {
   #Jobs should have columns named "Institution" and "Location"
   #Carnegie should have column named "Institution name"
-  jobs <- cbind(jobs, NA, NA, NA)
+  jobs <- cbind(jobs, NA, NA, NA, NA)
   colnames(jobs)[(ncol(jobs)-2):ncol(jobs)] <-
-    c("Institution name", "partial_matched", "State abbreviation")
+    c("Matched status", "Institution name", "State abbreviation")
   for(i in 1:nrow(jobs)) {
     myinst <- jobs$Institution[i]
 
     #Skip international institutions
     if(!jobs$Location[i] %in% c(state.name, "District of Columbia", "USA")) {
-      jobs$`Institution name`[i] <- "International"
+      jobs$`Matched status`[i] <- "International"
       next
     }
+
     #Do exact matching
     matches <- grep(paste0("^", myinst, "$"), carnegie$`Institution name`)
     if(length(matches) > 1) {
@@ -125,7 +126,7 @@ find_matches <- function(jobs, carnegie, aliases) {
     if(length(matches) == 1) {
       jobs$`Institution name`[i] <- carnegie$`Institution name`[matches]
       jobs$`State abbreviation`[i] <- carnegie$`State abbreviation`[matches]
-      jobs$partial_matched[i] <- FALSE
+      jobs$`Matched status`[i] <- "Match, exact"
     }
   }
 
@@ -155,7 +156,7 @@ find_matches <- function(jobs, carnegie, aliases) {
     if(length(matches) == 1) {
       jobs$`Institution name`[i] <- carnegie$`Institution name`[matches]
       jobs$`State abbreviation`[i] <- carnegie$`State abbreviation`[matches]
-      jobs$partial_matched[i] <- TRUE
+      jobs$`Matched status`[i] <- "Match, partial"
     }
   }
 
@@ -195,7 +196,8 @@ find_matches <- function(jobs, carnegie, aliases) {
     carnegie$`State abbreviation`[
       match(jobs$`Institution name`[myrows], carnegie$`Institution name`)]
 
-  jobs$partial_matched[myrows][!is.na(jobs$`Institution name`[myrows])] <- "alias"
+  jobs$`Matched status`[myrows][!is.na(jobs$`Institution name`[myrows])] <-
+    "Match, by alias"
 
   #Return results
   return(list("jobs" = jobs, "aliases" = aliases))
