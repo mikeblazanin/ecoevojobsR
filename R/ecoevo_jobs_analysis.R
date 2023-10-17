@@ -210,7 +210,7 @@ jobs <- lapply(
 
 for (i in 1:length(jobs)) {
   if(nrow(jobs[[i]]$aliases) > nrow(aliases)) {
-    write.csv(x = jobs[[i]]$aliases[jobs[[i]]$aliases$checked == "N", ],
+    write.csv(x = jobs[[i]]$aliases,
               file = paste0("./data-raw/aliases_new", i, ".csv"),
               row.names = FALSE, fileEncoding = "UTF-8")
   } else {file.remove(paste0("./data-raw/aliases_new", i, ".csv"))}
