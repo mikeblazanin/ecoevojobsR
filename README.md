@@ -17,9 +17,6 @@ the merged output to two files:
 
 - [You can find the most-recently updated faculty jobs listing file
   here](https://github.com/mikeblazanin/ecoevojobsR/blob/master/data-raw/ecoevojobsR_faculty.csv)
-- [You can find the most-recently updated fixed-term faculty jobs
-  listing file
-  here](https://github.com/mikeblazanin/ecoevojobsR/blob/master/data-raw/ecoevojobsR_fixed_term.csv)
 - [You can find the most-recently updated postdoc jobs listing file
   here](https://github.com/mikeblazanin/ecoevojobsR/blob/master/data-raw/ecoevojobsR_postdoc.csv)
 

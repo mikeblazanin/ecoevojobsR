@@ -15,7 +15,6 @@ knitr::opts_chunk$set(echo = TRUE)
 Once per hour, this repository automatically pulls the latest ecoevojobs spreadsheet and merges in public information from [the Carnegie Classification of Institutions of Higher Education](https://carnegieclassifications.acenet.edu/). It then writes the merged output to two files:
 
 - [You can find the most-recently updated faculty jobs listing file here](https://github.com/mikeblazanin/ecoevojobsR/blob/master/data-raw/ecoevojobsR_faculty.csv)
-- [You can find the most-recently updated fixed-term faculty jobs listing file here](https://github.com/mikeblazanin/ecoevojobsR/blob/master/data-raw/ecoevojobsR_fixed_term.csv)
 - [You can find the most-recently updated postdoc jobs listing file here](https://github.com/mikeblazanin/ecoevojobsR/blob/master/data-raw/ecoevojobsR_postdoc.csv)
 
 If you have any suggestions or see any errors, email me! mikeblazanin@gmail.com
