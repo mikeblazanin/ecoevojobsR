@@ -5,15 +5,11 @@ library(readxl)
 #These are the links for the 2022-2023 sheet
 jobs <- list(
   faculty =
-    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1Fvh1BZANNKsn8oVqqN2V4mQtKjpivU7fGqygNTTRAj8/edit#gid=1864294017",
-                                format = 'csv'),
-             stringsAsFactors = FALSE, strip.white = TRUE),
-  fixed_term =
-    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1Fvh1BZANNKsn8oVqqN2V4mQtKjpivU7fGqygNTTRAj8/edit#gid=202129152",
+    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1PnS-tHYXNVPaSfbXT5v9qZl0T7QHH4AtwoyIJSRQ5a0/edit?gid=76501376#gid=76501376",
                                 format = 'csv'),
              stringsAsFactors = FALSE, strip.white = TRUE),
   postdoc =
-    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1Fvh1BZANNKsn8oVqqN2V4mQtKjpivU7fGqygNTTRAj8/edit#gid=54534292",
+    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1PnS-tHYXNVPaSfbXT5v9qZl0T7QHH4AtwoyIJSRQ5a0/edit?gid=1368888587#gid=1368888587",
                                 format = 'csv'),
              stringsAsFactors = FALSE, strip.white = TRUE)
 )
@@ -228,7 +224,7 @@ jobs <- lapply(X = jobs,
                FUN = function(x) {
                  rename(x, "Matched institution name" = "Institution name")})
 
-mynames <- c("faculty", "fixed_term", "postdoc")
+mynames <- c("faculty", "postdoc")
 for (i in 1:length(jobs)) {
   write.csv(jobs[[i]], paste0("./data-raw/ecoevojobsR_", mynames[i], ".csv"),
             row.names = FALSE, fileEncoding = "UTF-8")
