@@ -1,0 +1,108 @@
+library(gsheet)
+library(dplyr)
+library(readxl)
+
+#Read in Carnegie data sheets
+carnegie_val <-
+  readxl::read_excel("./data-raw/CCIHE2021-PublicData.xlsx", sheet = "Values")
+colnames(carnegie_val) <- c("Variable", "Label", "Value", "Value_Label")
+carnegie_val <- carnegie_val[!is.na(carnegie_val$Value_Label), ]
+
+fill_vals <- function(x) {
+  if(is.na(x[1])) {stop("first value must not be NA")}
+  for (i in 1:length(x)) {if(is.na(x[i])) {x[i] <- x[i-1]}}
+  return(x)
+}
+carnegie_val$Variable <- fill_vals(carnegie_val$Variable)
+carnegie_val$Label <- fill_vals(carnegie_val$Label)
+
+carnegie_val <- dplyr::filter(carnegie_val,
+                              !Variable %in% c("Basic2000", "BASIC2005",
+                                               "BASIC2010", "BASIC2015",
+                                               "BASIC2018"))
+#Label R1 and R2
+carnegie_val <- dplyr::mutate(
+  carnegie_val,
+  Value_Label = ifelse(Variable == "BASIC2021",
+                       ifelse(Value == 15,
+                              paste("R1", Value_Label),
+                              ifelse(Value == 16,
+                                     paste("R2", Value_Label),
+                                     Value_Label)),
+                       Value_Label))
+
+
+carnegie_dat <-
+  readxl::read_excel("./data-raw/CCIHE2021-PublicData.xlsx", sheet = "Data")
+carnegie_dat <- dplyr::select(carnegie_dat,
+                              !c(basic2000, basic2005, basic2010,
+                                 basic2015, basic2018))
+
+carnegie_var <-
+  readxl::read_excel("./data-raw/CCIHE2021-PublicData.xlsx", sheet = "Variable")
+
+carnegie_dat <- as.data.frame(carnegie_dat)
+carnegie_val <- as.data.frame(carnegie_val)
+carnegie_var <- as.data.frame(carnegie_var)
+
+aliases <- read.csv("./data-raw/aliases.csv", fileEncoding = "UTF-8",
+                    strip.white = TRUE)
+aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
+
+#Convert numeric codes into meaningful labels
+for(i in 1:ncol(carnegie_dat)) {
+  col <- colnames(carnegie_dat)[i]
+  if(any(grepl(pattern = paste0("^", col, "$"), carnegie_val$Variable,
+               ignore.case = TRUE))) {
+    temp <- carnegie_val[grep(pattern = paste0("^", col, "$"), carnegie_val$Variable,
+                              ignore.case = TRUE), ]
+    carnegie_dat[, i] <- temp$Value_Label[match(carnegie_dat[, i], temp$Value)]
+  }
+}
+
+#Update column names to be long-form understandable labels
+colnames(carnegie_dat) <-
+  sapply(colnames(carnegie_dat),
+         mytable = carnegie_var$Variable,
+         mylabels = carnegie_var$Label,
+         function(clnm, mytable, mylabels) {
+           mylabels[grep(pattern = paste0("^", clnm, "$"),
+                         x = mytable, ignore.case = TRUE)]})
+
+carnegie_dat <- select(carnegie_dat,
+                       "Institution name",
+                       "2021 Basic Classification")
+
+colnames(carnegie_dat)[1] <- "Carnegie Institution Name"
+carnegie_dat <- cbind(data.frame("Alias" = carnegie_dat$`Carnegie Institution Name`),
+                      carnegie_dat)
+
+aliases_add <- filter(aliases, !is.na(carnegie_names))
+
+carnegie_dat <- rbind(
+  carnegie_dat,
+  data.frame(check.names = FALSE,
+    "Alias" = aliases_add$ecoevo_names,
+    "Carnegie Institution Name" = aliases_add$carnegie_names,
+    "2021 Basic Classification" = carnegie_dat$`2021 Basic Classification`[
+      match(aliases_add$carnegie_names,
+            carnegie_dat$`Carnegie Institution Name`)]))
+
+#Now add aliases for variants
+#Manually chosen rules include:
+#   Treat "The" from beginning of Carnegie as optional
+#   Treat " at " anywhere in Carnegie as optional
+#   Carnegie uses "-" with no spaces, but ecoevo sometimes
+#     uses ", " or " " or " - "
+#Change all "St" and "St." to be "Saint"
+
+
+stop("todo")
+
+
+
+
+write.csv(carnegie_dat, "./data-raw/carnegiedb_withaliases.csv",
+          row.names = FALSE)
+
+
