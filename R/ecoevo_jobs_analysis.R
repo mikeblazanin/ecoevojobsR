@@ -94,8 +94,7 @@ colnames(carnegie_dat) <-
 
 #Match institution names
 uniq_inst <- unique(c(jobs[[1]]$Institution,
-                      jobs[[2]]$Institution,
-                      jobs[[3]]$Institution))
+                      jobs[[2]]$Institution))
 find_matches <- function(jobs, carnegie, aliases) {
   #Jobs should have columns named "Institution" and "Location"
   #Carnegie should have column named "Institution name"
