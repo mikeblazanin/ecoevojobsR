@@ -180,7 +180,7 @@ find_matches <- function(jobs, carnegie, aliases) {
       rbind(aliases,
             data.frame("ecoevo_names" = unmatched_names[which_msng],
                        "carnegie_names" = NA, "checked" = "N",
-                       "State abbreviation" = NA, "include_gsheetdb" = NA))
+                       "State_abbreviation" = NA, "include_gsheetdb" = NA))
     aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
     print(paste("There are", length(which_msng), "new aliases which need a match"))
   }
