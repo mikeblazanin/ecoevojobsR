@@ -67,7 +67,7 @@ carnegie_val <- as.data.frame(carnegie_val)
 carnegie_var <- as.data.frame(carnegie_var)
 
 aliases <- read.csv("./data-raw/aliases.csv", fileEncoding = "UTF-8",
-                    strip.white = TRUE)
+                    strip.white = TRUE, check.names = FALSE)
 aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
 write.csv(aliases, file = "./data-raw/aliases.csv",
           row.names = FALSE, fileEncoding = "UTF-8")
@@ -179,7 +179,8 @@ find_matches <- function(jobs, carnegie, aliases) {
     aliases <-
       rbind(aliases,
             data.frame("ecoevo_names" = unmatched_names[which_msng],
-                       "carnegie_names" = NA, "checked" = "N"))
+                       "carnegie_names" = NA, "checked" = "N",
+                       "State abbreviation" = NA, "include_gsheetdb" = NA))
     aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
     print(paste("There are", length(which_msng), "new aliases which need a match"))
   }
