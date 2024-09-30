@@ -68,80 +68,70 @@ colnames(carnegie_dat) <-
 carnegie_dat <- select(carnegie_dat,
                        "Institution name",
                        "State abbreviation",
-                       "2021 Basic Classification")
+                       "2021 Basic Classification",
+                       everything())
 
 colnames(carnegie_dat)[1] <- "Carnegie Institution Name"
 carnegie_dat <- cbind(data.frame("Alias" = carnegie_dat$`Carnegie Institution Name`),
                       carnegie_dat)
 
-#Add aliases for variants ----
+#Modify aliases to account for variants ----
 #Manually chosen rules include:
-#   Treat "The" from beginning of Carnegie as optional
-carnegie_dat <-
-  rbind(carnegie_dat,
-        mutate(filter(carnegie_dat, grepl("^The ", Alias)),
-               Alias = gsub("^The ", "", Alias)))
-#   Treat " at " anywhere in Carnegie as optional
-carnegie_dat <-
-  rbind(carnegie_dat,
-        mutate(filter(carnegie_dat, grepl(" at ", Alias)),
-               Alias = gsub(" at ", " ", Alias)))
-#   Carnegie uses "-" with no spaces, but ecoevo sometimes
-#     uses ", " or " " or " - "
-carnegie_dat <-
-  rbind(carnegie_dat,
-        mutate(filter(carnegie_dat, grepl("-", Alias)),
-               Alias = gsub("-", ", ", Alias)),
-        mutate(filter(carnegie_dat, grepl("-", Alias)),
-               Alias = gsub("-", " ", Alias)),
-        mutate(filter(carnegie_dat, grepl("-", Alias)),
-               Alias = gsub("-", " - ", Alias)))
-#Carnegie uses all of Saint, St., and St.
-# Replace each variant with the other two possibilities
-carnegie_dat <-
-  rbind(carnegie_dat,
-        mutate(filter(carnegie_dat, grepl(" Saint ", Alias)),
-               Alias = gsub(" Saint ", " St. ", Alias)),
-        mutate(filter(carnegie_dat, grepl(" Saint ", Alias)),
-               Alias = gsub(" Saint ", " St ", Alias)),
-        mutate(filter(carnegie_dat, grepl(" St. ", Alias)),
-               Alias = gsub(" St. ", " Saint ", Alias)),
-        mutate(filter(carnegie_dat, grepl(" St. ", Alias)),
-               Alias = gsub(" St. ", " St ", Alias)),
-        mutate(filter(carnegie_dat, grepl(" St ", Alias)),
-               Alias = gsub(" St ", " Saint ", Alias)),
-        mutate(filter(carnegie_dat, grepl(" St ", Alias)),
-               Alias = gsub(" St ", " St. ", Alias))
-        )
+# (note that all rules need to be replicated in gsheet equation)
+
+# Remove "The" at beginning
+carnegie_dat <- mutate(carnegie_dat,
+                       Alias = gsub("^The ", "", Alias))
+
+# Remove " at ", "-", ", ", " - "
+#   Carnegie uses " at " or "-" with no spaces,
+#   but ecoevo sometimes uses ", " or " " or " - "
+carnegie_dat <- mutate(carnegie_dat,
+                       Alias = gsub(" at |-", " ", Alias))
+
+# Replace "St." and "St" with "Saint"
+carnegie_dat <- mutate(carnegie_dat,
+                       Alias = gsub("^St\\.? ", "Saint ", Alias),
+                       Alias = gsub(" St\\.? ", " Saint ", Alias))
 
 #Concatenate state at end of name
+# the my_state_name values are set by the form options for the
+# Submit Job form in the ecoevo spreadsheet
+my_state_name <- c(state.name,
+                   "Puerto Rico", "Asia (Other)", "District of Columbia",
+                   "Asia (Other)", "Asia (Other)", "Asia (Other)",
+                   "Asia (Other)", "Asia (Other)", "South America (Other)")
+my_state_abb <- c(state.abb,
+                  "PR", "AS", "DC", "FM", "MH", "GU", "MP", "PW", "VI")
+
 carnegie_dat <- mutate(
   carnegie_dat,
-  Alias = paste(Alias, state.name[match(`State abbreviation`, state.abb)]))
+  Alias = paste(Alias, my_state_name[match(`State abbreviation`, my_state_abb)]),
+  'Carnegie Name State' = paste(
+    `Carnegie Institution Name`,
+    my_state_name[match(`State abbreviation`, my_state_abb)]))
+carnegie_dat <- select(carnegie_dat,
+                       "Alias", "Carnegie Institution Name",
+                       "State abbreviation", "Carnegie Name State",
+                       everything())
 
 #Add manually curated aliases ----
 aliases <- read.csv("./data-raw/aliases.csv", fileEncoding = "UTF-8",
                     strip.white = TRUE, check.names = FALSE)
 aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
-aliases_add <- mutate(
-  filter(aliases,
-         !is.na(carnegie_names),
-         include_gsheetdb == "Y"),
+aliases <- mutate(
+  filter(aliases, !is.na(carnegie_names), include_gsheetdb == "Y"),
   Alias =
-    paste(ecoevo_names, state.name[match(`State abbreviation`, state.abb)]),
+    paste(ecoevo_names, my_state_name[match(`State_abbreviation`, my_state_abb)]),
   nonmanual_alias_tomatch =
-    paste(carnegie_names, state.name[match(`State abbreviation`, state.abb)]))
+    paste(carnegie_names, my_state_name[match(`State_abbreviation`, my_state_abb)]))
 
-carnegie_dat <- rbind(
-  carnegie_dat,
-  data.frame(check.names = FALSE,
-             "Alias" = aliases_add$Alias,
-             "Carnegie Institution Name" = aliases_add$carnegie_names,
-             "State abbreviation" = aliases_add$`State abbreviation`,
-             "2021 Basic Classification" =
-               carnegie_dat$`2021 Basic Classification`[
-                 match(aliases_add$nonmanual_alias_tomatch, carnegie_dat$Alias)]))
+aliases_toadd <-
+  carnegie_dat[
+    match(aliases$nonmanual_alias_tomatch, carnegie_dat$`Carnegie Name State`), ]
+aliases_toadd$Alias <- aliases$ecoevo_names
 
+carnegie_dat <- rbind(carnegie_dat, aliases_toadd)
 
 ##Write ----
 write.csv(carnegie_dat, "./data-raw/carnegiedb_withaliases.csv",
