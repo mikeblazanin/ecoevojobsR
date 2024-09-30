@@ -85,7 +85,7 @@ carnegie_dat <- mutate(carnegie_dat,
 
 # Remove " at ", "-", ", ", " - "
 #   Carnegie uses " at " or "-" with no spaces,
-#   but ecoevo sometimes uses ", " or " " or " - "
+#   but ecoevo sometimes uses " at" or ", " or " " or " - "
 carnegie_dat <- mutate(carnegie_dat,
                        Alias = gsub(" at |-", " ", Alias))
 
@@ -130,10 +130,23 @@ aliases_toadd <-
   carnegie_dat[
     match(aliases$nonmanual_alias_tomatch, carnegie_dat$`Carnegie Name State`), ]
 aliases_toadd$Alias <- aliases$ecoevo_names
+#Concatenate state at end of name
+aliases_toadd <- mutate(
+  aliases_toadd,
+  Alias = paste(Alias, my_state_name[match(`State abbreviation`, my_state_abb)]))
 
 carnegie_dat <- rbind(carnegie_dat, aliases_toadd)
+
+carnegie_dat <- carnegie_dat[order(carnegie_dat$`Carnegie Name State`), ]
 
 ##Write ----
 write.csv(carnegie_dat, "./data-raw/carnegiedb_withaliases.csv",
           row.names = FALSE)
 
+#gsheet formula:
+#=IF(ISNUMBER(MATCH(CONCATENATE(TRIM(B3)," ",TRIM(C3)), CarnegieDB!A$2:A$5000, 0)), VLOOKUP(CONCATENATE(TRIM(B3)," ",TRIM(C3)), CarnegieDB!A$2:CT$5000,5,FALSE), VLOOKUP(CONCATENATE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(TRIM(B3),"^The |^the ",""), " at | - |, |-"," "),"^St\.? ", "Saint "), " St\.? ", " Saint ")," ",TRIM(C3)),CarnegieDB!A$2:CT$5000,5,FALSE))
+
+#TODO:
+# move logic & pasting into gsheet so auto aliases are calculated there and
+#  people don't have to remember to paste the state at the end of the alias
+# Set up code to pull aliases that are added to the gsheet
