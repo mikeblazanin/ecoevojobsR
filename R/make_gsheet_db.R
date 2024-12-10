@@ -71,30 +71,12 @@ carnegie_dat <- select(carnegie_dat,
                        "2021 Basic Classification",
                        everything())
 
-colnames(carnegie_dat)[1] <- "Carnegie Institution Name"
-carnegie_dat <- cbind(data.frame("Alias" = carnegie_dat$`Carnegie Institution Name`),
+colnames(carnegie_dat)[1] <- "Official Carnegie Institution Name"
+carnegie_dat <- cbind(data.frame("Alias" = carnegie_dat$`Official Carnegie Institution Name`),
                       carnegie_dat)
 
-#Modify aliases to account for variants ----
-#Manually chosen rules include:
-# (note that all rules need to be replicated in gsheet equation)
 
-# Remove "The" at beginning
-carnegie_dat <- mutate(carnegie_dat,
-                       Alias = gsub("^The ", "", Alias))
 
-# Remove " at ", "-", ", ", " - "
-#   Carnegie uses " at " or "-" with no spaces,
-#   but ecoevo sometimes uses " at" or ", " or " " or " - "
-carnegie_dat <- mutate(carnegie_dat,
-                       Alias = gsub(" at |-", " ", Alias))
-
-# Replace "St." and "St" with "Saint"
-carnegie_dat <- mutate(carnegie_dat,
-                       Alias = gsub("^St\\.? ", "Saint ", Alias),
-                       Alias = gsub(" St\\.? ", " Saint ", Alias))
-
-#Concatenate state at end of name
 # the my_state_name values are set by the form options for the
 # Submit Job form in the ecoevo spreadsheet
 my_state_name <- c(state.name,
@@ -106,47 +88,81 @@ my_state_abb <- c(state.abb,
 
 carnegie_dat <- mutate(
   carnegie_dat,
-  Alias = paste(Alias, my_state_name[match(`State abbreviation`, my_state_abb)]),
-  'Carnegie Name State' = paste(
-    `Carnegie Institution Name`,
-    my_state_name[match(`State abbreviation`, my_state_abb)]))
+  Location = my_state_name[match(`State abbreviation`, my_state_abb)],
+  'Carnegie Name State' = paste(`Official Carnegie Institution Name`, Location))
 carnegie_dat <- select(carnegie_dat,
-                       "Alias", "Carnegie Institution Name",
-                       "State abbreviation", "Carnegie Name State",
+                       "Alias", "Official Carnegie Institution Name",
+                       "Location", "State abbreviation", "Carnegie Name State",
                        everything())
 
+#Add aliases created using automatic rules ----
+#Chosen rules include:
+# (note that all rules need to be replicated in gsheet equation)
+
+# Remove "The" at beginning
+auto_aliases <- mutate(carnegie_dat,
+                     Alias = gsub("^The ", "", Alias))
+
+# Remove " at ", "-", ", ", " - "
+#   Carnegie uses " at " or "-" with no spaces,
+#   but ecoevo sometimes uses " at" or ", " or " " or " - "
+auto_aliases <- mutate(auto_aliases,
+                     Alias = gsub(" at |-", " ", Alias))
+
+# Replace "St." and "St" with "Saint"
+auto_aliases <- mutate(auto_aliases,
+                     Alias = gsub("^St\\.? ", "Saint ", Alias),
+                     Alias = gsub(" St\\.? ", " Saint ", Alias))
+
+# Replace "&" with "and"
+auto_aliases <- mutate(auto_aliases,
+                       Alias = gsub(" ?& ?", " and ", Alias))
+
+auto_aliases <- filter(auto_aliases,
+                     Alias != `Official Carnegie Institution Name`)
+
 #Add manually curated aliases ----
-aliases <- read.csv("./data-raw/aliases.csv", fileEncoding = "UTF-8",
+man_aliases <- read.csv("./data-raw/aliases.csv", fileEncoding = "UTF-8",
                     strip.white = TRUE, check.names = FALSE)
-aliases <- aliases[order(aliases$checked, aliases$ecoevo_names), ]
-aliases <- mutate(
-  filter(aliases, !is.na(carnegie_names), include_gsheetdb == "Y"),
-  Alias =
-    paste(ecoevo_names, my_state_name[match(`State_abbreviation`, my_state_abb)]),
-  nonmanual_alias_tomatch =
+man_aliases <- man_aliases[order(man_aliases$checked, man_aliases$ecoevo_names), ]
+man_aliases <- mutate(
+  filter(man_aliases, !is.na(carnegie_names), include_gsheetdb == "Y"),
+  Alias = ecoevo_names,
+ 'Carnegie Name State' =
     paste(carnegie_names, my_state_name[match(`State_abbreviation`, my_state_abb)]))
 
-aliases_toadd <-
+#(not all manual aliases should be added to db)
+man_aliases_toadd <-
   carnegie_dat[
-    match(aliases$nonmanual_alias_tomatch, carnegie_dat$`Carnegie Name State`), ]
-aliases_toadd$Alias <- aliases$ecoevo_names
-#Concatenate state at end of name
-aliases_toadd <- mutate(
-  aliases_toadd,
-  Alias = paste(Alias, my_state_name[match(`State abbreviation`, my_state_abb)]))
+    match(man_aliases$`Carnegie Name State`, carnegie_dat$`Carnegie Name State`), ]
+man_aliases_toadd$Alias <- man_aliases$Alias
 
-carnegie_dat <- rbind(carnegie_dat, aliases_toadd)
+#Join ----
+carnegie_dat <- rbind(carnegie_dat, auto_aliases, man_aliases_toadd)
 
 carnegie_dat <- carnegie_dat[order(carnegie_dat$`Carnegie Name State`), ]
+
+carnegie_dat <- select(carnegie_dat,
+                       -"State abbreviation", -"Carnegie Name State")
+carnegie_dat <- select(carnegie_dat,
+                       "Alias", "Official Carnegie Institution Name",
+                       "Location", ,
+                       everything())
+carnegie_dat <- cbind(data.frame("Key" = ""), carnegie_dat)
 
 ##Write ----
 write.csv(carnegie_dat, "./data-raw/carnegiedb_withaliases.csv",
           row.names = FALSE)
 
-#gsheet formula:
-#=IF(ISNUMBER(MATCH(CONCATENATE(TRIM(B3)," ",TRIM(C3)), CarnegieDB!A$2:A$5000, 0)), VLOOKUP(CONCATENATE(TRIM(B3)," ",TRIM(C3)), CarnegieDB!A$2:CT$5000,5,FALSE), VLOOKUP(CONCATENATE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(TRIM(B3),"^The |^the ",""), " at | - |, |-"," "),"^St\.? ", "Saint "), " St\.? ", " Saint ")," ",TRIM(C3)),CarnegieDB!A$2:CT$5000,5,FALSE))
+#Steps
+#1. import carnegiedb_withaliases.csv as sheet
+#2. rename sheet to "db"
+#3. In Key column of db sheet, enter: =CONCATENATE(B2, " ",D2)
+#4. expand to all rows
+#5. Add column to Faculty/Permanent Jobs Sheet titled "Classification"
+#6. In "Classification" column, enter:
+#      =IF(ISNUMBER(MATCH(CONCATENATE(TRIM(B3)," ",TRIM(C3)), db!A$2:A$102040, 0)), VLOOKUP(CONCATENATE(TRIM(B3)," ",TRIM(C3)), db!A$2:CT$102040,5,FALSE), VLOOKUP(CONCATENATE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(REGEXREPLACE(TRIM(B3),"^The |^the ",""), " at | - |, |-"," "),"^St\.? ", "Saint "), " St\.? ", " Saint "), " ?& ?", " and ")," ",TRIM(C3)),db!A$2:CT$102040,5,FALSE))
+#7. expand to all rows
 
 #TODO:
-# move logic & pasting into gsheet so auto aliases are calculated there and
-#  people don't have to remember to paste the state at the end of the alias
 # Set up code to pull aliases that are added to the gsheet
