@@ -92,6 +92,9 @@ colnames(carnegie_dat) <-
            mylabels[grep(pattern = paste0("^", clnm, "$"),
                          x = mytable, ignore.case = TRUE)]})
 
+#Write copy to file
+write.csv(carnegie_dat, "./data-raw/carnegie_merged.csv", row.names = FALSE)
+
 #Match institution names
 uniq_inst <- unique(c(jobs[[1]]$Institution,
                       jobs[[2]]$Institution))
