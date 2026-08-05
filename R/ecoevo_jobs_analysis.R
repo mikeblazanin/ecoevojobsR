@@ -5,11 +5,11 @@ library(readxl)
 #These are the links for the 2025-2026 sheet
 jobs <- list(
   faculty =
-    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1P7BfU0emdcGFVIWIs_erFxyy0UGXXORw7h0rpU19gQ8/edit?gid=1219796980#gid=1219796980",
+    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1frP2LlZy_GibdpXxg_WDoHGjVAZk_8tb-GsPN_Thkms/edit?gid=332523242#gid=332523242",
                                 format = 'csv'),
              stringsAsFactors = FALSE, strip.white = TRUE),
   postdoc =
-    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1P7BfU0emdcGFVIWIs_erFxyy0UGXXORw7h0rpU19gQ8/edit?gid=1228591705#gid=1228591705",
+    read.csv(text = gsheet2text("https://docs.google.com/spreadsheets/d/1frP2LlZy_GibdpXxg_WDoHGjVAZk_8tb-GsPN_Thkms/edit?gid=900481761#gid=900481761",
                                 format = 'csv'),
              stringsAsFactors = FALSE, strip.white = TRUE)
 )
